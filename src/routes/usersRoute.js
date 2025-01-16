@@ -25,7 +25,7 @@ router.post("/", async (req, res) => {
    * */
   const isExist = await usersColl.findOne({ email: user.email });
   if (isExist) {
-    res.send({ message: "User already exist!" });
+    return res.send({ message: "User already exist!" });
   }
 
   //   if no user exist in db make a admin role

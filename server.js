@@ -11,7 +11,15 @@ connectDB();
 
 // middlewares
 app.use(express.json());
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://nexus-3e632.firebaseapp.com",
+      "nexus-3e632.web.app",
+    ],
+  })
+);
 
 // routes
 app.use("/api/articles", articleRouter);
