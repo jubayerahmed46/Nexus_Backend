@@ -24,6 +24,7 @@ router.post("/", async (req, res) => {
    *    }
    * }
    * */
+  console.log(doc);
 
   const result = await articleCollection.insertOne(doc);
   res.send(result);
