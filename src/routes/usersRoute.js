@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 
 const { usersCollection } = require("../collections/collections");
+const verifyToken = require("../middlewares/verifyToken");
 
 router.post("/", async (req, res) => {
   const usersColl = await usersCollection();
@@ -44,12 +45,15 @@ router.post("/", async (req, res) => {
 });
 
 // get all users
-router.get("/", async (req, res) => {
-  const usersColl = await usersCollection();
-  const query = { email: req.params.email };
+router.get("/", verifyToken, async (req, res) => {
+  console.log("getting all user");
 
-  const user = await usersColl.findOne(query);
-  res.send(user);
+  const usersColl = await usersCollection();
+  // "credetials" from verify token ( actualy jwt )
+  const query = { email: { $ne: req.credetials.email } };
+
+  const users = await usersColl.find(query).toArray();
+  res.send(users);
 });
 
 // get a user data
