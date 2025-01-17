@@ -38,20 +38,26 @@ router.post("/", async (req, res) => {
     user.premiumeType = "free";
     user.role = "reader";
   }
-  console.log(user);
 
   const result = await usersColl.insertOne(user);
   res.send(result);
 });
-// get a user data
 
+// get all users
+router.get("/", async (req, res) => {
+  const usersColl = await usersCollection();
+  const query = { email: req.params.email };
+
+  const user = await usersColl.findOne(query);
+  res.send(user);
+});
+
+// get a user data
 router.get("/user/:email", async (req, res) => {
   const usersColl = await usersCollection();
   const query = { email: req.params.email };
-  console.log(query);
 
   const user = await usersColl.findOne(query);
-  console.log(user);
   res.send(user);
 });
 

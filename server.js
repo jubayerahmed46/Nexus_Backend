@@ -4,6 +4,8 @@ const cors = require("cors");
 require("dotenv").config();
 const articleRouter = require("./src/routes/articleRoute");
 const usersRoute = require("./src/routes/usersRoute");
+const jwtRoute = require("./src/routes/jwtRoute");
+// post and app
 const port = process.env.PORT || 8080;
 const app = express();
 // connect mongoDB
@@ -24,6 +26,7 @@ app.use(
 // routes
 app.use("/api/articles", articleRouter);
 app.use("/api/users", usersRoute);
+app.use("/api/jwt", jwtRoute);
 
 app.get("/", (req, res) => {
   res.send("Server Is Running....");
