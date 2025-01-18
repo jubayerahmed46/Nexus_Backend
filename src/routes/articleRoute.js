@@ -1,6 +1,7 @@
 const express = require("express");
 
 const { articlesCollection } = require("../collections/collections");
+const { ObjectId } = require("mongodb");
 
 const router = express.Router();
 
@@ -31,7 +32,6 @@ router.post("/", async (req, res) => {
 
 router.get("/", async (req, res) => {
   const articleCollection = await articlesCollection();
-  console.log("start");
 
   /**
    * - get only published articles
@@ -43,11 +43,11 @@ router.get("/", async (req, res) => {
    * */
   const result = await articleCollection
     .aggregate([
-      {
-        $match: {
-          status: "published",
-        },
-      },
+      // {
+      //   $match: {
+      //     status: "published",
+      //   },
+      // },
       {
         $addFields: {
           authorId: { $toObjectId: "$authorInfo.userId" },
@@ -70,6 +70,7 @@ router.get("/", async (req, res) => {
           publisher: 1,
           tags: 1,
           thumbnail: 1,
+          status: 1,
           "authorInfo.fullName": 1,
           "authorInfo.email": 1,
           "authorInfo.profilePhoto": 1,
@@ -83,4 +84,56 @@ router.get("/", async (req, res) => {
 
   res.send(result);
 });
+
+router.patch("/approve/id", async (req, res) => {
+  const query = { _id: new ObjectId(req.params.id) };
+  const articleCollection = await articlesCollection();
+
+  const result = await articleCollection.updateOne(query, {
+    status: "published",
+  });
+
+  res.send(result);
+});
+
 module.exports = router;
+
+// .aggregate([
+//   {
+//     $match: {
+//       status: "published",
+//     },
+//   },
+//   {
+//     $addFields: {
+//       authorId: { $toObjectId: "$authorInfo.userId" },
+//     },
+//   },
+//   {
+//     $lookup: {
+//       from: "users",
+//       localField: "authorId",
+//       foreignField: "_id",
+//       as: "authorInfo",
+//     },
+//   },
+
+//   {
+//     $project: {
+//       title: 1,
+//       description: 1,
+//       creationTime: 1,
+//       publisher: 1,
+//       tags: 1,
+//       thumbnail: 1,
+//       status: 1,
+//       "authorInfo.fullName": 1,
+//       "authorInfo.email": 1,
+//       "authorInfo.profilePhoto": 1,
+//     },
+//   },
+//   {
+//     $unwind: "$authorInfo",
+//   },
+// ])
+// .toArray();
