@@ -85,13 +85,42 @@ router.get("/", async (req, res) => {
   res.send(result);
 });
 
-router.patch("/approve/id", async (req, res) => {
+// approve article and change status to "published"
+router.patch("/approve/:id", async (req, res) => {
   const query = { _id: new ObjectId(req.params.id) };
   const articleCollection = await articlesCollection();
 
   const result = await articleCollection.updateOne(query, {
-    status: "published",
+    $set: { status: "published" },
   });
+
+  res.send(result);
+});
+
+// decline the article and change status to "rejected"
+router.patch("/reject/:id", async (req, res) => {
+  const query = { _id: new ObjectId(req.params.id) };
+  const { declineReason } = req.body;
+  const articleCollection = await articlesCollection();
+
+  const result = await articleCollection.updateOne(
+    query,
+    {
+      $set: { status: "rejected", reasonForDecline: declineReason },
+    },
+    { $upsert: true }
+  );
+
+  res.send(result);
+});
+
+// delete the article from db
+router.patch("/delete/:id", async (req, res) => {
+  const query = { _id: new ObjectId(req.params.id) };
+  const { declineReason } = req.body;
+  const articleCollection = await articlesCollection();
+
+  const result = await articleCollection.deleteOne(query);
 
   res.send(result);
 });
