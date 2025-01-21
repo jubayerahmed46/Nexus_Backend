@@ -37,15 +37,17 @@ router.post("/create-payment-intent", verifyToken, async (req, res) => {
 router.post("/payments-data", verifyToken, async (req, res) => {
   const paymentColl = await paymentCollection();
   const userColl = await usersCollection();
+
   const doc = req.body;
 
-  console.log(doc);
+  // store payment info to database
+  await paymentColl.insertOne(doc);
 
-  const result = await paymentColl.insertOne(doc);
+  // update user token based user plan
   const filter = { email: req.credetials.email };
-  await userColl.updateOne(
+  const result = await userColl.updateOne(
     filter,
-    { premiumeToken: doc.estimatedTokenDate },
+    { $set: { premiumeToken: doc.estimatedTokenDate } },
     { upsert: true }
   );
   res.send(result);
