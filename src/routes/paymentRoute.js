@@ -45,9 +45,22 @@ router.post("/payments-data", verifyToken, async (req, res) => {
 
   // update user token based user plan
   const filter = { email: req.credetials.email };
+
+  // set plan token time based on user prefferance - store as millisecond
+  const premiumeCardEstimatedTime = new Date().getTime() + doc.tokenDate;
+  // if user already taken plan and wanna again buy get
+  const isAlreadyPremiume = await userColl.findOne(filter);
+  if (isAlreadyPremiume.premiumeToken) {
+    const result = await userColl.updateOne(filter, {
+      $set: { premiumeToken: isAlreadyPremiume.premiumeToken + doc.tokenDate },
+    });
+
+    return res.send(result);
+  }
+
   const result = await userColl.updateOne(
     filter,
-    { $set: { premiumeToken: doc.estimatedTokenDate } },
+    { $set: { premiumeToken: premiumeCardEstimatedTime } },
     { upsert: true }
   );
   res.send(result);
