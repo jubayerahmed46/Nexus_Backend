@@ -61,8 +61,6 @@ router.get("/user/:email", async (req, res) => {
   const usersColl = await usersCollection();
   const query = { email: req.params.email };
 
-  console.log(query);
-
   const user = await usersColl.findOne(query);
   res.send(user);
 });
@@ -81,7 +79,6 @@ router.get("/user/role", verifyToken, async (req, res) => {
       },
     ])
     .toArray();
-  console.log(user);
 
   res.send(user);
 });
