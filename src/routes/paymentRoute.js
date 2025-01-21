@@ -1,10 +1,15 @@
 const express = require("express");
+const {
+  paymentCollection,
+  usersCollection,
+} = require("../collections/collections");
+const verifyToken = require("../middlewares/verifyToken");
 const stripe = require("stripe")(process.env.stripe_secret_key);
 require("dotenv").config();
 
 const router = express.Router();
 
-router.post("/create-payment-intent", async (req, res) => {
+router.post("/create-payment-intent", verifyToken, async (req, res) => {
   /**
    * Steps to create payment intent ->
    * - get amouont from frontend
@@ -17,7 +22,6 @@ router.post("/create-payment-intent", async (req, res) => {
    *
    * */
   const { amount } = req.body;
-  console.log(amount);
 
   const convertToPaisa = parseInt(amount * 100);
   const intent = await stripe.paymentIntents.create({
@@ -27,6 +31,24 @@ router.post("/create-payment-intent", async (req, res) => {
   });
 
   res.send({ clientSecret: intent.client_secret });
+});
+
+// store user succeded paymnet data on databage
+router.post("/payments-data", verifyToken, async (req, res) => {
+  const paymentColl = await paymentCollection();
+  const userColl = await usersCollection();
+  const doc = req.body;
+
+  console.log(doc);
+
+  const result = await paymentColl.insertOne(doc);
+  const filter = { email: req.credetials.email };
+  await userColl.updateOne(
+    filter,
+    { premiumeToken: doc.estimatedTokenDate },
+    { upsert: true }
+  );
+  res.send(result);
 });
 
 module.exports = router;
