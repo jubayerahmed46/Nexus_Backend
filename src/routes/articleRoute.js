@@ -145,6 +145,23 @@ router.patch("/premiume/:id", async (req, res) => {
   res.send(result);
 });
 
+// get all pulished article
+router.get("/published", async (req, res) => {
+  const articleCollection = await articlesCollection();
+
+  const result = await articleCollection
+    .aggregate([
+      {
+        $match: {
+          status: "published",
+        },
+      },
+    ])
+    .toArray();
+
+  res.send(result);
+});
+
 module.exports = router;
 
 // .aggregate([

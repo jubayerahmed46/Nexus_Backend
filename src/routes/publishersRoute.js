@@ -12,4 +12,11 @@ router.post("/create", verifyToken, async (req, res) => {
   const result = await publishersColl.insertOne(doc);
   res.send(result);
 });
+
+router.get("/", verifyToken, async (req, res) => {
+  const publishersColl = await publishersCollection();
+
+  const result = await publishersColl.find().toArray();
+  res.send(result);
+});
 module.exports = router;
