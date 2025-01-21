@@ -5,6 +5,7 @@ require("dotenv").config();
 const articleRouter = require("./src/routes/articleRoute");
 const usersRoute = require("./src/routes/usersRoute");
 const jwtRoute = require("./src/routes/jwtRoute");
+const paymentRoute = require("./src/routes/paymentRoute");
 // post and app
 const port = process.env.PORT || 8080;
 const app = express();
@@ -27,6 +28,7 @@ app.use(
 app.use("/api/articles", articleRouter);
 app.use("/api/users", usersRoute);
 app.use("/api/jwt", jwtRoute);
+app.use("/api/payment", paymentRoute);
 
 app.get("/", (req, res) => {
   res.send("Server Is Running....");

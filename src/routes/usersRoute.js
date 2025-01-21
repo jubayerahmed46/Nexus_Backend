@@ -61,7 +61,28 @@ router.get("/user/:email", async (req, res) => {
   const usersColl = await usersCollection();
   const query = { email: req.params.email };
 
+  console.log(query);
+
   const user = await usersColl.findOne(query);
+  res.send(user);
+});
+
+// get user role
+router.get("/user/role", verifyToken, async (req, res) => {
+  const usersColl = await usersCollection();
+  console.log("hitt");
+
+  const user = await usersColl
+    .aggregate([
+      {
+        $match: {
+          email: req.credetials.email,
+        },
+      },
+    ])
+    .toArray();
+  console.log(user);
+
   res.send(user);
 });
 

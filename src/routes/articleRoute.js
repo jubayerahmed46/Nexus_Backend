@@ -71,6 +71,7 @@ router.get("/", async (req, res) => {
           tags: 1,
           thumbnail: 1,
           status: 1,
+          isPremium: 1,
           "authorInfo.fullName": 1,
           "authorInfo.email": 1,
           "authorInfo.profilePhoto": 1,
@@ -115,12 +116,31 @@ router.patch("/reject/:id", async (req, res) => {
 });
 
 // delete the article from db
-router.patch("/delete/:id", async (req, res) => {
+router.delete("/delete/:id", async (req, res) => {
   const query = { _id: new ObjectId(req.params.id) };
-  const { declineReason } = req.body;
   const articleCollection = await articlesCollection();
 
   const result = await articleCollection.deleteOne(query);
+
+  res.send(result);
+});
+
+// convert article to premiume
+router.patch("/premiume/:id", async (req, res) => {
+  const query = { _id: new ObjectId(req.params.id) };
+  const articleCollection = await articlesCollection();
+
+  const result = await articleCollection.updateOne(
+    query,
+    {
+      $set: {
+        isPremium: true,
+      },
+    },
+    {
+      $upsert: true,
+    }
+  );
 
   res.send(result);
 });
