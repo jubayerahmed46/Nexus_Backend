@@ -46,8 +46,6 @@ router.post("/", async (req, res) => {
 
 // get all users
 router.get("/", verifyToken, async (req, res) => {
-  console.log("getting all user");
-
   const usersColl = await usersCollection();
   // "credetials" from verify token ( actualy jwt )
   const query = { email: { $ne: req.credetials.email } };
@@ -68,7 +66,6 @@ router.get("/user/:email", async (req, res) => {
 // get user role
 router.get("/user/role", verifyToken, async (req, res) => {
   const usersColl = await usersCollection();
-  console.log("hitt");
 
   const user = await usersColl
     .aggregate([
@@ -81,6 +78,55 @@ router.get("/user/role", verifyToken, async (req, res) => {
     .toArray();
 
   res.send(user);
+});
+
+// get premiume user
+router.get("/user/premiume/:email", verifyToken, async (req, res) => {
+  const usersColl = await usersCollection();
+
+  const user = await usersColl
+    .aggregate([
+      {
+        $match: {
+          email: req.params.email,
+        },
+      },
+      {
+        $group: {
+          _id: "$premiumeToken",
+        },
+      },
+    ])
+    .toArray();
+
+  const premiumeUser = user[0]?._id;
+
+  const today = new Date().getTime();
+
+  if (premiumeUser < today) {
+    await usersColl.updateOne(
+      { email: req.params.email },
+      { $set: { premiumeToken: 0 } },
+      { upsert: true }
+    );
+    const updatedUser = await usersColl
+      .aggregate([
+        {
+          $match: {
+            email: req.params.email,
+          },
+        },
+        {
+          $group: {
+            _id: "$premiumeToken",
+          },
+        },
+      ])
+      .toArray();
+    res.send({ premiumeUser: updatedUser[0]?._id });
+  } else {
+    res.send({ premiumeUser });
+  }
 });
 
 module.exports = router;
