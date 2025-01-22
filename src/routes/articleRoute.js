@@ -2,10 +2,11 @@ const express = require("express");
 
 const { articlesCollection } = require("../collections/collections");
 const { ObjectId } = require("mongodb");
+const verifyToken = require("../middlewares/verifyToken");
 
 const router = express.Router();
 
-router.post("/", async (req, res) => {
+router.post("/", verifyToken, async (req, res) => {
   const articleCollection = await articlesCollection();
   const doc = req.body;
   /**
@@ -31,7 +32,7 @@ router.post("/", async (req, res) => {
 });
 
 // get a article
-router.get("/article/:id", async (req, res) => {
+router.get("/article/:id", verifyToken, async (req, res) => {
   const articleCollection = await articlesCollection();
 
   const result = await articleCollection
@@ -76,7 +77,7 @@ router.get("/article/:id", async (req, res) => {
   res.send(result[0]);
 });
 
-router.get("/", async (req, res) => {
+router.get("/", verifyToken, async (req, res) => {
   const articleCollection = await articlesCollection();
 
   /**
@@ -127,8 +128,40 @@ router.get("/", async (req, res) => {
   res.send(result);
 });
 
+// filter articles with worst way <---------------------------------------------------------
+router.get("/filter", async (req, res) => {
+  const articleCollection = await articlesCollection();
+
+  const { title, publisher, tags } = req.query;
+
+  // Build a dynamic query object based on the provided filters
+  const query = {
+    status: "published",
+  };
+
+  if (title) {
+    query.title = { $regex: title, $options: "i" };
+  }
+  if (publisher) {
+    query.publisher = { $regex: publisher, $options: "i" };
+  }
+  if (tags) {
+    query.tags = { $in: tags.split(",") };
+  }
+
+  try {
+    const result = await articleCollection.find(query).toArray();
+    res.send(result);
+  } catch (err) {
+    console.error(err);
+    res
+      .status(500)
+      .send({ error: "An error occurred while filtering articles" });
+  }
+});
+
 // approve article and change status to "published"
-router.patch("/approve/:id", async (req, res) => {
+router.patch("/approve/:id", verifyToken, async (req, res) => {
   const query = { _id: new ObjectId(req.params.id) };
   const articleCollection = await articlesCollection();
 
@@ -140,7 +173,7 @@ router.patch("/approve/:id", async (req, res) => {
 });
 
 // decline the article and change status to "rejected"
-router.patch("/reject/:id", async (req, res) => {
+router.patch("/reject/:id", verifyToken, async (req, res) => {
   const query = { _id: new ObjectId(req.params.id) };
   const { declineReason } = req.body;
   const articleCollection = await articlesCollection();
@@ -157,7 +190,7 @@ router.patch("/reject/:id", async (req, res) => {
 });
 
 // delete the article from db
-router.delete("/delete/:id", async (req, res) => {
+router.delete("/delete/:id", verifyToken, async (req, res) => {
   const query = { _id: new ObjectId(req.params.id) };
   const articleCollection = await articlesCollection();
 
@@ -167,7 +200,7 @@ router.delete("/delete/:id", async (req, res) => {
 });
 
 // convert article to premiume
-router.patch("/premiume/:id", async (req, res) => {
+router.patch("/premiume/:id", verifyToken, async (req, res) => {
   const query = { _id: new ObjectId(req.params.id) };
   const articleCollection = await articlesCollection();
 
@@ -187,7 +220,7 @@ router.patch("/premiume/:id", async (req, res) => {
 });
 
 // get all pulished article
-router.get("/published", async (req, res) => {
+router.get("/published", verifyToken, async (req, res) => {
   const articleCollection = await articlesCollection();
 
   const result = await articleCollection
