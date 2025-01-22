@@ -30,6 +30,52 @@ router.post("/", async (req, res) => {
   res.send(result);
 });
 
+// get a article
+router.get("/article/:id", async (req, res) => {
+  const articleCollection = await articlesCollection();
+
+  const result = await articleCollection
+    .aggregate([
+      {
+        $match: { _id: new ObjectId(req.params.id) },
+      },
+      {
+        $addFields: {
+          authorId: { $toObjectId: "$authorInfo.userId" },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "authorId",
+          foreignField: "_id",
+          as: "authorInfo",
+        },
+      },
+
+      {
+        $project: {
+          title: 1,
+          description: 1,
+          creationTime: 1,
+          publisher: 1,
+          tags: 1,
+          thumbnail: 1,
+          status: 1,
+          isPremium: 1,
+          "authorInfo.fullName": 1,
+          "authorInfo.email": 1,
+          "authorInfo.profilePhoto": 1,
+        },
+      },
+      {
+        $unwind: "$authorInfo",
+      },
+    ])
+    .toArray();
+  res.send(result[0]);
+});
+
 router.get("/", async (req, res) => {
   const articleCollection = await articlesCollection();
 
@@ -43,11 +89,6 @@ router.get("/", async (req, res) => {
    * */
   const result = await articleCollection
     .aggregate([
-      // {
-      //   $match: {
-      //     status: "published",
-      //   },
-      // },
       {
         $addFields: {
           authorId: { $toObjectId: "$authorInfo.userId" },
