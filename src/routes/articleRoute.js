@@ -63,6 +63,7 @@ router.get("/article/:id", verifyToken, async (req, res) => {
           tags: 1,
           thumbnail: 1,
           status: 1,
+          views: 1,
           isPremium: 1,
           "authorInfo.fullName": 1,
           "authorInfo.email": 1,
@@ -114,6 +115,7 @@ router.get("/", verifyToken, async (req, res) => {
           thumbnail: 1,
           status: 1,
           isPremium: 1,
+          views: 1,
           "authorInfo.fullName": 1,
           "authorInfo.email": 1,
           "authorInfo.profilePhoto": 1,
@@ -124,6 +126,7 @@ router.get("/", verifyToken, async (req, res) => {
       },
     ])
     .toArray();
+  console.log(result);
 
   res.send(result);
 });
@@ -133,7 +136,14 @@ router.get("/filter", async (req, res) => {
   const articleCollection = await articlesCollection();
 
   const { title, publisher, tags } = req.query;
-
+  /**
+   * - get only published articles
+   * - convert user in to objectId for getting user information from users collection
+   * - fetch user data using local( mean article associeted userId)
+   * - define which field match with users collection
+   * - using "as" keyword create a new array and push all the value of user object
+   * - at last convert array to an object
+   * */
   // Build a dynamic query object based on the provided filters
   const query = {
     status: "published",
@@ -150,7 +160,48 @@ router.get("/filter", async (req, res) => {
   }
 
   try {
-    const result = await articleCollection.find(query).toArray();
+    const result = await articleCollection
+      .aggregate([
+        {
+          $match: {
+            ...query,
+          },
+        },
+        {
+          $addFields: {
+            authorId: { $toObjectId: "$authorInfo.userId" },
+          },
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "authorId",
+            foreignField: "_id",
+            as: "authorInfo",
+          },
+        },
+        {
+          $project: {
+            title: 1,
+            description: 1,
+            creationTime: 1,
+            publisher: 1,
+            tags: 1,
+            thumbnail: 1,
+            status: 1,
+            isPremium: 1,
+            views: 1,
+            "authorInfo.fullName": 1,
+            "authorInfo.email": 1,
+            "authorInfo.profilePhoto": 1,
+          },
+        },
+        {
+          $unwind: "$authorInfo",
+        },
+      ])
+      .toArray();
+
     res.send(result);
   } catch (err) {
     console.error(err);
@@ -236,6 +287,78 @@ router.get("/published", verifyToken, async (req, res) => {
   res.send(result);
 });
 
+// count views
+router.post("/views/:id", verifyToken, async (req, res) => {
+  const articleCollection = await articlesCollection();
+
+  const query = { _id: new ObjectId(req.params.id) };
+  const result = await articleCollection.updateOne(
+    query,
+    {
+      $inc: { views: 1 },
+    },
+    { $upsert: true }
+  );
+
+  res.send(result);
+});
+
+// get popular articles
+router.get("/popular", verifyToken, async (req, res) => {
+  const articleCollection = await articlesCollection();
+
+  const result = await articleCollection
+    .aggregate([
+      {
+        $match: {
+          status: "published",
+        },
+      },
+      {
+        $sort: { views: -1 },
+      },
+
+      {
+        $addFields: {
+          authorId: { $toObjectId: "$authorInfo.userId" },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "authorId",
+          foreignField: "_id",
+          as: "authorInfo",
+        },
+      },
+
+      {
+        $project: {
+          title: 1,
+          description: 1,
+          creationTime: 1,
+          publisher: 1,
+          tags: 1,
+          thumbnail: 1,
+          status: 1,
+          isPremium: 1,
+          views: 1,
+          "authorInfo.fullName": 1,
+          "authorInfo.email": 1,
+          "authorInfo.profilePhoto": 1,
+        },
+      },
+      {
+        $limit: 5,
+      },
+      {
+        $unwind: "$authorInfo",
+      },
+    ])
+    .toArray();
+
+  res.send(result);
+});
 module.exports = router;
 
 // .aggregate([
