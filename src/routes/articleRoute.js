@@ -359,6 +359,137 @@ router.get("/popular", verifyToken, async (req, res) => {
 
   res.send(result);
 });
+
+// get all premiume article sorting with views acending
+router.get("/premiume", verifyToken, async (req, res) => {
+  const articleCollection = await articlesCollection();
+  /**
+   * Get premiume articles
+   * - query article by "isPremiume" property
+   * - sort them according to the published date ( acending order )
+   * - send it to the frontend
+   *
+   * */
+  const result = await articleCollection
+    .aggregate([
+      {
+        $match: {
+          isPremium: true,
+        },
+      },
+      {
+        $sort: { creationTime: -1 },
+      },
+
+      {
+        $addFields: {
+          authorId: { $toObjectId: "$authorInfo.userId" },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "authorId",
+          foreignField: "_id",
+          as: "authorInfo",
+        },
+      },
+
+      {
+        $project: {
+          title: 1,
+          description: 1,
+          creationTime: 1,
+          publisher: 1,
+          tags: 1,
+          thumbnail: 1,
+          status: 1,
+          isPremium: 1,
+          views: 1,
+          "authorInfo.fullName": 1,
+          "authorInfo.email": 1,
+          "authorInfo.profilePhoto": 1,
+        },
+      },
+      {
+        $limit: 5,
+      },
+      {
+        $unwind: "$authorInfo",
+      },
+    ])
+    .toArray();
+
+  res.send(result);
+});
+// get My-article page articles (based user)
+router.get("/my-articles/:userId", verifyToken, async (req, res) => {
+  const articleCollection = await articlesCollection();
+
+  /**
+   * Get premiume articles
+   * - query article by "isPremiume" property
+   * - sort them according to the published date ( acending order )
+   * - send it to the frontend
+   *
+   * */
+  console.log(req.params.userId);
+
+  const result = await articleCollection
+    .aggregate([
+      {
+        $match: {
+          "authorInfo.userId": req.params.userId,
+        },
+      },
+      {
+        $addFields: {
+          authorId: { $toObjectId: "$authorInfo.userId" },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "authorId",
+          foreignField: "_id",
+          as: "authorInfo",
+        },
+      },
+
+      {
+        $project: {
+          title: 1,
+          description: 1,
+          creationTime: 1,
+          publisher: 1,
+          tags: 1,
+          thumbnail: 1,
+          status: 1,
+          isPremium: 1,
+          views: 1,
+          "authorInfo.fullName": 1,
+          "authorInfo.email": 1,
+          "authorInfo.profilePhoto": 1,
+        },
+      },
+      {
+        $limit: 5,
+      },
+      {
+        $unwind: "$authorInfo",
+      },
+    ])
+    .toArray();
+
+  console.log(result);
+
+  // const result = await articleCollection
+  //   .find({ email: req.credetials.email })
+  //   .toArray();
+
+  res.send(result);
+});
+
 module.exports = router;
 
 // .aggregate([
