@@ -13,7 +13,7 @@ router.post("/create", verifyToken, async (req, res) => {
   res.send(result);
 });
 
-router.get("/", verifyToken, async (req, res) => {
+router.get("/", async (req, res) => {
   const publishersColl = await publishersCollection();
 
   const result = await publishersColl.find().toArray();

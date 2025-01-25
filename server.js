@@ -7,6 +7,7 @@ const usersRoute = require("./src/routes/usersRoute");
 const jwtRoute = require("./src/routes/jwtRoute");
 const paymentRoute = require("./src/routes/paymentRoute");
 const publisherRoute = require("./src/routes/publishersRoute");
+const reviewsRoute = require("./src/routes/reviewsRoute");
 // post and app
 const port = process.env.PORT || 8080;
 const app = express();
@@ -31,6 +32,7 @@ app.use("/api/users", usersRoute);
 app.use("/api/jwt", jwtRoute);
 app.use("/api/payment", paymentRoute);
 app.use("/api/publisher", publisherRoute);
+app.use("/api/reviews", reviewsRoute);
 
 app.get("/", (req, res) => {
   res.send("Server Is Running....");

@@ -1,6 +1,10 @@
 const express = require("express");
 
-const { articlesCollection } = require("../collections/collections");
+const {
+  articlesCollection,
+  publishersCollection,
+  usersCollection,
+} = require("../collections/collections");
 const { ObjectId } = require("mongodb");
 const verifyToken = require("../middlewares/verifyToken");
 
@@ -8,6 +12,7 @@ const router = express.Router();
 
 router.post("/", verifyToken, async (req, res) => {
   const articleCollection = await articlesCollection();
+  const userColl = await usersCollection();
   const doc = req.body;
   /**
    * implement schema using mongoos in future!
@@ -26,6 +31,32 @@ router.post("/", verifyToken, async (req, res) => {
    *    }
    * }
    * */
+  // check is premeume or not
+  // if not premium user check in the db and allow only upload 1 article
+
+  const userObj = await userColl.findOne({
+    email: req.credetials.email,
+  });
+
+  if (!userObj?.premiumeToken) {
+    const hasOneItem = await articleCollection
+      .find({
+        "authorInfo.userId": userObj?._id.toString(),
+      })
+      .toArray();
+
+    if (!hasOneItem.length) {
+      doc.status = "requested";
+      const upload = await articleCollection.insertOne(doc);
+      return res.send(upload);
+    } else {
+      return res.status(409).send({
+        message:
+          "You can't upload post greater than 1. You have to purchage plan for upload unlimited! see more information in the subscription page.",
+      });
+    }
+  }
+
   doc.status = "requested";
   const result = await articleCollection.insertOne(doc);
   res.send(result);
@@ -191,6 +222,7 @@ router.get("/filter", async (req, res) => {
             status: 1,
             isPremium: 1,
             views: 1,
+            role: 1,
             "authorInfo.fullName": 1,
             "authorInfo.email": 1,
             "authorInfo.profilePhoto": 1,
@@ -304,7 +336,7 @@ router.post("/views/:id", verifyToken, async (req, res) => {
 });
 
 // get popular articles
-router.get("/popular", verifyToken, async (req, res) => {
+router.get("/popular", async (req, res) => {
   const articleCollection = await articlesCollection();
 
   const result = await articleCollection
@@ -433,7 +465,6 @@ router.get("/my-articles/:userId", verifyToken, async (req, res) => {
    * - send it to the frontend
    *
    * */
-  console.log(req.params.userId);
 
   const result = await articleCollection
     .aggregate([
@@ -467,29 +498,54 @@ router.get("/my-articles/:userId", verifyToken, async (req, res) => {
           status: 1,
           isPremium: 1,
           views: 1,
+          reasonForDecline: 1,
           "authorInfo.fullName": 1,
           "authorInfo.email": 1,
           "authorInfo.profilePhoto": 1,
         },
       },
-      {
-        $limit: 5,
-      },
+
       {
         $unwind: "$authorInfo",
       },
     ])
     .toArray();
 
-  console.log(result);
+  res.send(result);
+});
 
-  // const result = await articleCollection
-  //   .find({ email: req.credetials.email })
-  //   .toArray();
+// get all publisher
+router.get("/", verifyToken, async (req, res) => {
+  const pubCollection = await publishersCollection();
+
+  const result = await pubCollection.find();
 
   res.send(result);
 });
 
+// delete article by user (user article)
+router.delete("/user/delete/:id", verifyToken, async (req, res) => {
+  const articleCollection = await articlesCollection();
+
+  const result = await articleCollection.deleteOne({
+    _id: new ObjectId(req.params.id),
+  });
+  console.log(result);
+
+  res.send(result);
+});
+
+// update user article as (user)
+router.patch("/user/update/:id", verifyToken, async (req, res) => {
+  const query = { _id: new ObjectId(req.params.id) };
+  const articleCollection = await articlesCollection();
+
+  const result = await articleCollection.updateOne(query, {
+    $set: { ...req.body },
+  });
+
+  res.send(result);
+});
 module.exports = router;
 
 // .aggregate([

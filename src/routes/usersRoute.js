@@ -38,6 +38,7 @@ router.post("/", async (req, res) => {
   } else {
     user.premiumeType = "free";
     user.role = "reader";
+    user.premiumeToken = 0;
   }
 
   const result = await usersColl.insertOne(user);
@@ -127,6 +128,79 @@ router.get("/user/premiume/:email", verifyToken, async (req, res) => {
   } else {
     res.send({ premiumeUser });
   }
+});
+
+// get home page stistic data
+router.get("/statistics", async (req, res) => {
+  const usersColl = await usersCollection();
+
+  const result = await usersColl
+    .aggregate([
+      {
+        $facet: {
+          // Total User Count
+          totalUsers: [{ $count: "count" }],
+          // Premium User Count
+          premiumUsers: [
+            { $match: { premiumeToken: { $gt: 0 } } },
+            { $count: "count" },
+          ],
+          // Normal User Count
+          normalUsers: [
+            {
+              $match: { $or: [{ premiumeToken: 0 }, { premiumeToken: null }] },
+            },
+            { $count: "count" },
+          ],
+        },
+      },
+      {
+        $project: {
+          totalUsers: { $arrayElemAt: ["$totalUsers.count", 0] },
+          premiumUsers: { $arrayElemAt: ["$premiumUsers.count", 0] },
+          normalUsers: { $arrayElemAt: ["$normalUsers.count", 0] },
+        },
+      },
+    ])
+    .toArray();
+
+  res.send(result[0]);
+});
+
+// update user name and photo
+router.patch("/update/:email", verifyToken, async (req, res) => {
+  const usersColl = await usersCollection();
+
+  const body = req.body;
+  const updatedData = {
+    $set: {
+      fullName: body.fullName,
+      profilePhoto: body.profilePhoto,
+    },
+  };
+
+  const updateUser = await usersColl.updateOne(
+    { email: req.params.email },
+    updatedData
+  );
+  res.send(updateUser);
+});
+
+router.patch("/update/user-role/:email", verifyToken, async (req, res) => {
+  const usersColl = await usersCollection();
+
+  const updatedUser = {
+    $set: {
+      role: "admin",
+    },
+  };
+
+  const result = await usersColl.updateOne(
+    { email: req.params.email },
+    updatedUser
+  );
+
+  res.send(result);
 });
 
 module.exports = router;
