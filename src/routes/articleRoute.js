@@ -111,15 +111,12 @@ router.get("/article/:id", verifyToken, async (req, res) => {
 
 router.get("/", verifyToken, async (req, res) => {
   const articleCollection = await articlesCollection();
+  const { page = 1, limit = 10 } = req.query; // Default page = 1, limit = 10
 
-  /**
-   * - get only published articles
-   * - convert user in to objectId for getting user information from users collection
-   * - fetch user data using local( mean article associeted userId)
-   * - define which field match with users collection
-   * - using "as" keyword create a new array and push all the value of user object
-   * - at last convert array to an object
-   * */
+  // Pagination logic: Skip and limit based on page number and limit
+  const skip = (page - 1) * limit;
+  const totalArticles = await articleCollection.countDocuments(); // Total number of articles for pagination
+
   const result = await articleCollection
     .aggregate([
       {
@@ -135,7 +132,6 @@ router.get("/", verifyToken, async (req, res) => {
           as: "authorInfo",
         },
       },
-
       {
         $project: {
           title: 1,
@@ -155,11 +151,19 @@ router.get("/", verifyToken, async (req, res) => {
       {
         $unwind: "$authorInfo",
       },
+      {
+        $skip: skip, // Skip articles based on pagination
+      },
+      {
+        $limit: parseInt(limit), // Limit the number of articles
+      },
     ])
     .toArray();
-  console.log(result);
 
-  res.send(result);
+  res.send({
+    articles: result,
+    total: totalArticles, // Total articles count for pagination purposes
+  });
 });
 
 // filter articles with worst way <---------------------------------------------------------

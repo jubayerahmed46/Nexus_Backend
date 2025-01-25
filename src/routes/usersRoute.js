@@ -45,14 +45,29 @@ router.post("/", async (req, res) => {
   res.send(result);
 });
 
-// get all users
+// Get all users with pagination
 router.get("/", verifyToken, async (req, res) => {
   const usersColl = await usersCollection();
-  // "credetials" from verify token ( actualy jwt )
+  const { page = 1, limit = 10 } = req.query; // Default page = 1, limit = 10
+
+  // "credetials" from verify token (JWT)
   const query = { email: { $ne: req.credetials.email } };
 
-  const users = await usersColl.find(query).toArray();
-  res.send(users);
+  // Get the total count of users for pagination purposes
+  const totalUsers = await usersColl.countDocuments(query);
+
+  // Fetch the users for the current page and limit
+  const users = await usersColl
+    .find(query)
+    .skip((page - 1) * limit) // Skip based on page number
+    .limit(parseInt(limit)) // Limit the number of users returned
+    .toArray();
+
+  // Send paginated data including total count for front-end
+  res.send({
+    users,
+    total: totalUsers, // The total number of users
+  });
 });
 
 // get a user data
