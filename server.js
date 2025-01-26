@@ -21,7 +21,7 @@ app.use(
     origin: [
       "http://localhost:5173",
       "https://nexus-3e632.firebaseapp.com",
-      "nexus-3e632.web.app",
+      "https://nexus-3e632.web.app",
     ],
   })
 );
