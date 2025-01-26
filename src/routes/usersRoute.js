@@ -18,6 +18,7 @@ router.post("/", async (req, res) => {
    *     profilePhoto: "url",
    *     role: "",
    *     premiumeType: "free" || 5d || 10d,
+   * premiumeToken: 0,
    *     writerInfo: {
    *         name: "",
    *         profileProto: "url",
@@ -34,13 +35,14 @@ router.post("/", async (req, res) => {
 
   if (!userCount) {
     user.role = "admin";
+
     user.premiumeType = "pro-admin";
   } else {
     user.premiumeType = "free";
     user.role = "reader";
-    user.premiumeToken = 0;
   }
 
+  user.premiumeToken = 0;
   const result = await usersColl.insertOne(user);
   res.send(result);
 });
@@ -176,8 +178,6 @@ router.get("/statistics", async (req, res) => {
       },
     ])
     .toArray();
-
-  console.log(result[0]);
 
   res.send(result[0]);
 });

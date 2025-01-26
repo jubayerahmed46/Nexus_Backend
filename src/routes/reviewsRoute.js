@@ -8,8 +8,6 @@ router.get("/", async (req, res) => {
 
   const result = await reviewsColl.find().toArray();
 
-  console.log(result);
-
   res.send(result);
 });
 
@@ -18,8 +16,6 @@ router.post("/", async (req, res) => {
 
   const doc = req.body;
   const result = await reviewsColl.insertOne(doc);
-
-  console.log(result);
 
   res.send(result);
 });

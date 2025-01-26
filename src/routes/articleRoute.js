@@ -38,7 +38,7 @@ router.post("/", verifyToken, async (req, res) => {
     email: req.credetials.email,
   });
 
-  if (!userObj?.premiumeToken) {
+  if (!userObj?.premiumeToken && userObj?.role !== "admin") {
     const hasOneItem = await articleCollection
       .find({
         "authorInfo.userId": userObj?._id.toString(),
@@ -192,8 +192,6 @@ router.get("/article-publisher-stats", verifyToken, async (req, res) => {
       publisher: publisher._id,
       percentage: ((publisher.count / totalArticles) * 100).toFixed(2),
     }));
-
-    console.log(publisherStats); // Log the result to ensure it's correct
 
     res.send(publisherStats);
   } catch (err) {
@@ -570,7 +568,6 @@ router.delete("/user/delete/:id", verifyToken, async (req, res) => {
   const result = await articleCollection.deleteOne({
     _id: new ObjectId(req.params.id),
   });
-  console.log(result);
 
   res.send(result);
 });
