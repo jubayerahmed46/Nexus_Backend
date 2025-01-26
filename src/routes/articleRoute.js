@@ -166,6 +166,42 @@ router.get("/", verifyToken, async (req, res) => {
   });
 });
 
+// Get the count of articles grouped by publisher
+router.get("/article-publisher-stats", verifyToken, async (req, res) => {
+  try {
+    const articleCollection = await articlesCollection();
+
+    const result = await articleCollection
+      .aggregate([
+        { $match: { status: "published" } },
+        {
+          $group: {
+            _id: "$publisher",
+            count: { $sum: 1 },
+          },
+        },
+      ])
+      .toArray();
+
+    const totalArticles = result.reduce(
+      (acc, publisher) => acc + publisher.count,
+      0
+    );
+
+    const publisherStats = result.map((publisher) => ({
+      publisher: publisher._id,
+      percentage: ((publisher.count / totalArticles) * 100).toFixed(2),
+    }));
+
+    console.log(publisherStats); // Log the result to ensure it's correct
+
+    res.send(publisherStats);
+  } catch (err) {
+    console.error("Server error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // filter articles with worst way <---------------------------------------------------------
 router.get("/filter", async (req, res) => {
   const articleCollection = await articlesCollection();
@@ -548,6 +584,48 @@ router.patch("/user/update/:id", verifyToken, async (req, res) => {
     $set: { ...req.body },
   });
 
+  res.send(result);
+});
+
+// get publishers states
+router.get("/states", verifyToken, async (req, res) => {
+  const articleCollection = await articlesCollection();
+
+  const result = await articleCollection
+    .aggregate([
+      {
+        $group: {
+          _id: "$publisher",
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { count: -1 },
+      },
+    ])
+    .toArray();
+  const toarr = result.map((obj) => [obj._id, obj.count]);
+
+  res.send(toarr);
+});
+
+// get tags states
+router.get("/tags-state", async (req, res) => {
+  const articleCollection = await articlesCollection();
+
+  const result = await articleCollection
+    .aggregate([
+      {
+        $group: {
+          _id: "$tags",
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { count: -1 },
+      },
+    ])
+    .toArray();
   res.send(result);
 });
 module.exports = router;
