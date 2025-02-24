@@ -15,7 +15,7 @@ async function connectDB() {
         deprecationErrors: true,
       },
     });
-    // await client.connect();
+    await client.connect();
     db = client.db(process.env.DB_NAME);
     // collections
 

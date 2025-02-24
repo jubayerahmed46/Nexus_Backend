@@ -63,7 +63,7 @@ router.post("/", verifyToken, async (req, res) => {
 });
 
 // get a article
-router.get("/article/:id", verifyToken, async (req, res) => {
+router.get("/article/:id", async (req, res) => {
   const articleCollection = await articlesCollection();
 
   const result = await articleCollection
@@ -204,19 +204,17 @@ router.get("/article-publisher-stats", verifyToken, async (req, res) => {
 router.get("/filter", async (req, res) => {
   const articleCollection = await articlesCollection();
 
-  const { title, publisher, tags } = req.query;
-  /**
-   * - get only published articles
-   * - convert user in to objectId for getting user information from users collection
-   * - fetch user data using local( mean article associeted userId)
-   * - define which field match with users collection
-   * - using "as" keyword create a new array and push all the value of user object
-   * - at last convert array to an object
-   * */
-  // Build a dynamic query object based on the provided filters
+  const { title, publisher, tags, sortBy } = req.query;
+
+  // Build a dynamic query object
   const query = {
     status: "published",
   };
+
+  let sortOption = -1;
+  if (sortBy === "ascen") {
+    sortOption = 1;
+  }
 
   if (title) {
     query.title = { $regex: title, $options: "i" };
@@ -231,16 +229,9 @@ router.get("/filter", async (req, res) => {
   try {
     const result = await articleCollection
       .aggregate([
-        {
-          $match: {
-            ...query,
-          },
-        },
-        {
-          $addFields: {
-            authorId: { $toObjectId: "$authorInfo.userId" },
-          },
-        },
+        { $match: query },
+        { $sort: { views: sortOption } },
+        { $addFields: { authorId: { $toObjectId: "$authorInfo.userId" } } },
         {
           $lookup: {
             from: "users",
@@ -266,9 +257,7 @@ router.get("/filter", async (req, res) => {
             "authorInfo.profilePhoto": 1,
           },
         },
-        {
-          $unwind: "$authorInfo",
-        },
+        { $unwind: "$authorInfo" },
       ])
       .toArray();
 
@@ -343,6 +332,8 @@ router.patch("/premiume/:id", verifyToken, async (req, res) => {
 // get all pulished article
 router.get("/published", verifyToken, async (req, res) => {
   const articleCollection = await articlesCollection();
+  const sortBy = req.query.sortBy;
+  console.log(sortBy);
 
   const result = await articleCollection
     .aggregate([
