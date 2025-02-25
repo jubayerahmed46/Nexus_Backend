@@ -1,5 +1,5 @@
 const express = require("express");
-const { connectDB } = require("./src/db/db");
+const { connectDB, getDB } = require("./src/db/db"); // Import getDB if needed
 const cors = require("cors");
 require("dotenv").config();
 const articleRouter = require("./src/routes/articleRoute");
@@ -8,11 +8,10 @@ const jwtRoute = require("./src/routes/jwtRoute");
 const paymentRoute = require("./src/routes/paymentRoute");
 const publisherRoute = require("./src/routes/publishersRoute");
 const reviewsRoute = require("./src/routes/reviewsRoute");
-// post and app
+
+// port and app
 const port = process.env.PORT || 8080;
 const app = express();
-// connect mongoDB
-connectDB();
 
 // middlewares
 app.use(express.json());
@@ -25,19 +24,27 @@ app.use(
     ],
   })
 );
+(async function startServer() {
+  try {
+    await connectDB();
+    console.log("Database connected successfully");
 
-// routes
-app.use("/api/articles", articleRouter);
-app.use("/api/users", usersRoute);
-app.use("/api/jwt", jwtRoute);
-app.use("/api/payment", paymentRoute);
-app.use("/api/publisher", publisherRoute);
-app.use("/api/reviews", reviewsRoute);
+    // Routes
+    app.use("/api/articles", articleRouter);
+    app.use("/api/users", usersRoute);
+    app.use("/api/jwt", jwtRoute);
+    app.use("/api/payment", paymentRoute);
+    app.use("/api/publisher", publisherRoute);
+    app.use("/api/reviews", reviewsRoute);
 
-app.get("/", (req, res) => {
-  res.send("Server Is Running....");
-});
-// listen the port
-app.listen(port, () => {
-  console.log(`Server running port on :${port}`);
-});
+    app.get("/", (_, res) => {
+      res.send("Server Is Running....");
+    });
+
+    app.listen(port, () => {
+      console.log(`Server running on port: ${port}`);
+    });
+  } catch (error) {
+    console.error(`Failed to start the server: ${error.message}`);
+  }
+})();

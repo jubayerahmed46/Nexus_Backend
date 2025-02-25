@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 const { MongoClient, ServerApiVersion } = require("mongodb");
 require("dotenv").config();
 
@@ -15,11 +14,9 @@ async function connectDB() {
         deprecationErrors: true,
       },
     });
+
     await client.connect();
     db = client.db(process.env.DB_NAME);
-    // collections
-
-    // console.log(`MongoDB Connected: ${process.env.DB_NAME}`);
   } catch (error) {
     console.error(`Error: ${error.message}`);
   }

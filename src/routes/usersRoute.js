@@ -187,16 +187,17 @@ router.patch("/update/:email", verifyToken, async (req, res) => {
   const usersColl = await usersCollection();
 
   const body = req.body;
+
   const updatedData = {
     $set: {
-      fullName: body.fullName,
-      profilePhoto: body.profilePhoto,
+      ...body,
     },
   };
 
   const updateUser = await usersColl.updateOne(
     { email: req.params.email },
-    updatedData
+    updatedData,
+    { $upsert: true }
   );
   res.send(updateUser);
 });
@@ -213,6 +214,45 @@ router.patch("/update/user-role/:email", verifyToken, async (req, res) => {
   const result = await usersColl.updateOne(
     { email: req.params.email },
     updatedUser
+  );
+
+  res.send(result);
+});
+
+// add user phone number manually from his\her profile
+router.patch("/add-phone-number/:email", async (req, res) => {
+  const usersColl = await usersCollection();
+  const email = req.params.email;
+  const number = req.body.contactNumber;
+
+  const result = await usersColl.updateOne(
+    { email },
+    {
+      $set: {
+        contactNumber: number,
+      },
+    },
+    { $upsert: true }
+  );
+
+  res.send(result);
+});
+
+// add user Address manually from his\her profile
+router.patch("/add-address/:email", async (req, res) => {
+  const usersColl = await usersCollection();
+  const email = req.params.email;
+  const address = req.body.address;
+  console.log(address);
+
+  const result = await usersColl.updateOne(
+    { email },
+    {
+      $set: {
+        address: address,
+      },
+    },
+    { $upsert: true }
   );
 
   res.send(result);
